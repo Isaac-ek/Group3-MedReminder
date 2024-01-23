@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medication Reminder System - Medication Details</title>
+    <link rel="stylesheet" type="text/css" href="MedRem.css">
+</head>
+<body>
+
+<section id="medication-input">
+    <h2>Medication Input</h2>
+    <form id="medication-form">
+        <label for="medicationName">Medication Name:</label>
+        <input type="text" id="medicationName" name="medicationName" required>
+        <label for="dosage">Dosage:</label>
+        <input type="text" id="dosage" name="dosage" required>
+
+        <label for="frequency">Frequency:</label>
+        <select id="frequency" name="frequency" required>
+            <option value="Morning">Once a day</option>
+            <option value="Morning, Afternoon">Twice a day</option>
+            <option value="Morning, Afternoon, Evening">Three times a day</option>
+        </select>
+
+        <label for="nextdosgae">Next Dosage</label>
+        <input type="datetime-local" id="nextdosgae" name="nextdosage" required>
+
+        <button type="button">Add Medication</button>
+    </form>
+
+    <script>
+        const add_med = async (medicationName, dosage, frequency, nextdosage) => {
+            const response = await fetch("/add-med", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({medicationName, dosage, frequency, nextdosage}),
+                redirect: 'follow',
+            })
+            if (response.redirected) {
+                const finalUrl = response.url;
+                console.log("Redirected to:", finalUrl)
+                window.location.href = finalUrl
+            }
+        }
+        const submit = document.querySelector('button')
+        submit.addEventListener('click', function () {
+            let medicationName = document.getElementById('medicationName').value
+            let dosage = document.getElementById('dosage').value
+            let frequency = document.getElementById('frequency').value;
+            let nextdosage = document.getElementById('nextdosgae').value;
+            if (medicationName === "" || dosage === "" || frequency === "" || nextdosage === "") {
+                alert("Please fill in all fields")
+                return
+            }
+
+            if (new Date(nextdosage) < new Date()) {
+                alert("Please enter a valid date")
+                return
+            }
+            add_med(medicationName, dosage, frequency, nextdosage)
+        })
+
+
+    </script>
+
+</section>
+
+</body>
+</html>

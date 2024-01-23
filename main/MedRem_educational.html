@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medication Reminder System - Educational Page</title>
+    <link rel="stylesheet" type="text/css" href="/assests/new.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.2.0/socket.io.js"></script>
+</head>
+<body>
+
+<header>
+    <div class="logo">MedReminder</div>
+    <!-- Add any additional navigation items if needed -->
+</header>
+
+<main>
+    <section class="welcome-section">
+        <h1>Welcome, [User's Name]!</h1>
+    </section>
+
+    <section class="medication-list">
+        <div class="medication-item">
+            <h2>Medication Name</h2>
+            <p>Dosage: 10mg</p>
+            <p>Frequency: Morning, Afternoon</p>
+            <p>Next Dose: Tomorrow, 9:00 AM</p>
+            <div class="actions">
+                <button class="delete-button">Delete</button>
+            </div>
+        </div>
+
+        <!-- Add more medication items as needed -->
+
+    </section>
+</main>
+
+<footer>
+    <!-- Add footer content if needed -->
+</footer>
+
+<!-- Add this to your existing HTML file -->
+<script>
+    function formatDateTime(inputDateTime) {
+        const inputDate = new Date(inputDateTime);
+
+        // Get tomorrow's date
+        const tomorrowDate = new Date();
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+
+        // Check if the input date is tomorrow
+        const isTomorrow = inputDate.getDate() === tomorrowDate.getDate() &&
+            inputDate.getMonth() === tomorrowDate.getMonth() &&
+            inputDate.getFullYear() === tomorrowDate.getFullYear();
+
+        const date_names = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const day = date_names[inputDate.getDay()];
+
+        // Format the time
+        const hours = inputDate.getHours();
+        const minutes = inputDate.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const formattedTime = `${(hours % 12) || 12}:${minutes < 10 ? '0' : ''}${minutes} ${ampm}`;
+
+        // Format the date
+        const dayOfMonth = inputDate.getDate();
+        const month = inputDate.toLocaleString('en-US', { month: 'long' });
+        const year = inputDate.getFullYear();
+        const formattedDate = `${day} - ${month} ${dayOfMonth}, ${year} | ${formattedTime}`;
+
+        return formattedDate;
+    }
+
+
+
+
+    const username = "{{username}}"
+    document.querySelector(".welcome-section h1").innerHTML = `Welcome ${username}`
+
+    //
+    const fetch_list = async () => {
+        document.querySelector('.medication-list').innerHTML = ""
+        const res = await fetch('/med-list');
+        const data = await res.json()
+        if (data.length === 0){
+            document.querySelector('.medication-list').innerHTML =`
+                <div class=medication-item>
+                    No Current Medication
+                </div>
+            `
+        }
+
+        data.forEach((d) => {
+            const med_item = document.createElement("div")
+            let id = d._id.toString();
+            med_item.classList.add("medication-item")
+            med_item.setAttribute("data-id", d._id)
+            med_item.innerHTML = `
+                <h2>${d.name}</h2>
+                <p>Dosage: ${d.dosage}</p>
+                <p>Frequency: ${d.frequency}</p>
+                <p>Next Dose: ${formatDateTime(d.nextDose)}</p>
+                <div class="actions">
+                  <button class="delete-button" onclick="delete_med('${id}')">Delete</button>
+                </div>
+              `;
+            document.querySelector('.medication-list').appendChild(med_item)
+
+        })
+        add_btn = document.createElement("button")
+        add_btn.classList.add("add-medication-button")
+        add_btn.innerHTML = "+ Add Medication"
+        document.querySelector('.medication-list').appendChild(add_btn)
+
+        document.querySelector('.add-medication-button').addEventListener('click', function () {
+            window.location.href = 'http://localhost:3000/add-medication'
+        })
+    }
+    fetch_list()
+
+    const delete_med = async (id) => {
+        await fetch(`/med-delete`, {
+            method: "DELETE",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ id }),
+        });
+        fetch_list()
+    }
+
+
+    // reminder function
+    const reminder = async () => {
+        const res = await fetch('/med-list');
+        const data = await res.json()
+        data.forEach((d) => {
+            if (new Date(d.nextDose) < new Date(new Date().getTime() + 60000)) {
+                alert(`It's time to take your ${d.name}`)
+                fetch_list()
+            }
+            else if (new Date(d.nextDose) === new Date(new Date().getTime() + 300000)) {
+                alert(`You have 5 minutes to take your ${d.name} medication`)
+            }
+        })
+    }
+
+    // runs the reminder function every 30 seconds
+    setInterval(reminder, 10000)
+</script>
+</body>
+</html>
